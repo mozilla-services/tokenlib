@@ -41,9 +41,9 @@ Each token also has an associated "token secret".  This is a secret key that
 can be shared with the consumer of the token to enable authentication schemes
 such as MAC Access Authentication of Two-Legged OAuth::
 
-    >>> key = tokenlib.get_token_secret(token, secret="I_LOVE_UNICORNS")
+    >>> key = tokenlib.get_token_secret(token, secret="I_LIKE_UNICORNS")
     >>> print key
-    ZG-OfJB0bGzYwPsO-zh9PlbGMAQ=
+    EZslG8yEYTGyDvBjRnxGipL5Kd8=
 
 For applications that are using the same settings over and over again, you
 will probably want to create a TokenManager object rather than using the
@@ -54,3 +54,5 @@ module-level convenience functions::
     >>> print data
     {u'userid': 42, u'expires': 1329875384.073159, u'salt': u'1c033f'}
 
+This will let you customize e.g. the token expiry timeout or hash module
+without repeating the settings in each call.
