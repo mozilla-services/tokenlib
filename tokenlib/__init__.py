@@ -6,7 +6,7 @@
 Generic library for managing signed authentication tokens.
 
 """
-
+import logging
 import os
 import time
 import json
@@ -16,6 +16,9 @@ from base64 import urlsafe_b64encode as b64encode
 from base64 import urlsafe_b64decode as b64decode
 
 from tokenlib.utils import strings_differ, HKDF
+
+
+logger = logging.getLogger('tokenlib')
 
 
 #  Default parameters for the TokenManager class.
