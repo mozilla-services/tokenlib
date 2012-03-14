@@ -5,7 +5,7 @@
 import hashlib
 import unittest2
 
-from tokenlib.utils import strings_differ, HKDF, HKDF_extract, HKDF_extract
+from tokenlib.utils import strings_differ, HKDF, HKDF_extract
 
 
 class TestUtils(unittest2.TestCase):
