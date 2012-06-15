@@ -100,7 +100,7 @@ class TokenManager(object):
     def parse_token(self, token, now=None):
         """Extract the data embedded in the given token, if valid.
 
-        The token is valid is it has a valid signature and if the embedded
+        The token is valid if it has a valid signature and if the embedded
         expiry time has not passed.  If the token is not valid then this
         method raises ValueError.
         """
