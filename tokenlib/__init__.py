@@ -15,16 +15,16 @@ __ver_tuple__ = (__ver_major__, __ver_minor__, __ver_patch__, __ver_sub__)
 __version__ = "%d.%d.%d%s" % __ver_tuple__
 
 
-import logging
 import os
+import logging
 import time
 import json
 import hmac
 import hashlib
-from base64 import urlsafe_b64encode as b64encode
-from base64 import urlsafe_b64decode as b64decode
+from binascii import hexlify
 
-from tokenlib.utils import strings_differ, HKDF
+from tokenlib.utils import (strings_differ, HKDF,
+                            encode_token_bytes, decode_token_bytes)
 
 
 logger = logging.getLogger('tokenlib')
@@ -67,17 +67,19 @@ class TokenManager(object):
     def __init__(self, secret=None, timeout=None, hashmod=None):
         if secret is None:
             secret = DEFAULT_SECRET
+        elif not isinstance(secret, bytes):
+            secret = secret.encode("utf8")
         if timeout is None:
             timeout = DEFAULT_TIMEOUT
         if hashmod is None:
             hashmod = DEFAULT_HASHMOD
-        if isinstance(hashmod, basestring):
+        if isinstance(hashmod, str):
             hashmod = getattr(hashlib, hashmod)
         self.secret = secret
         self.timeout = timeout
         self.hashmod = hashmod
         self.hashmod_digest_size = hashmod().digest_size
-        self._sig_secret = HKDF(self.secret, salt=None, info="SIGNING",
+        self._sig_secret = HKDF(self.secret, salt=None, info=b"SIGNING",
                                 size=self.hashmod_digest_size)
 
     def make_token(self, data):
@@ -89,13 +91,13 @@ class TokenManager(object):
         """
         data = data.copy()
         if "salt" not in data:
-            data["salt"] = os.urandom(3).encode("hex")
+            data["salt"] = hexlify(os.urandom(3)).decode("ascii")
         if "expires" not in data:
             data["expires"] = time.time() + self.timeout
-        payload = json.dumps(data)
+        payload = json.dumps(data).encode("utf8")
         sig = self._get_signature(payload)
         assert len(sig) == self.hashmod_digest_size
-        return b64encode(payload + sig)
+        return encode_token_bytes(payload + sig)
 
     def parse_token(self, token, now=None):
         """Extract the data embedded in the given token, if valid.
@@ -106,9 +108,9 @@ class TokenManager(object):
         """
         # Parse the payload and signature from the token.
         try:
-            decoded_token = b64decode(token)
-        except TypeError, e:
-            raise ValueError(str(e))
+            decoded_token = decode_token_bytes(token)
+        except TypeError as e:
+            raise ValueError(str(e))  # pragma: nocover
         payload = decoded_token[:-self.hashmod_digest_size]
         sig = decoded_token[-self.hashmod_digest_size:]
         # Carefully check the signature.
@@ -118,7 +120,7 @@ class TokenManager(object):
         if strings_differ(sig, expected_sig):
             raise ValueError("token has invalid signature")
         # Only decode *after* we've confirmed the signature.
-        data = json.loads(payload)
+        data = json.loads(payload.decode("utf8"))
         # Check whether it has expired.
         if now is None:
             now = time.time()
@@ -132,18 +134,19 @@ class TokenManager(object):
         A per-token secret key is calculated by deriving it from the master
         secret with HKDF.
         """
-        size = self.hashmod_digest_size
         # XXX: Having to parse the salt back out of the token is yuck.
         # But I like having get_token_secret() as an independent method.
         # We should consider modifying token format to make this easier.
         # e.g. by having token = b64encode(data):salt:signature.
         try:
-            payload = b64decode(token)[:-self.hashmod_digest_size]
-            salt = json.loads(payload)["salt"].encode("ascii")
-        except (TypeError, KeyError), e:
+            payload = decode_token_bytes(token)[:-self.hashmod_digest_size]
+            salt = json.loads(payload.decode("utf8"))["salt"].encode("ascii")
+        except (TypeError, KeyError) as e:
             raise ValueError(str(e))
-        secret = HKDF(self.secret, salt=salt, info=token, size=size)
-        return b64encode(secret)
+        info = token.encode("ascii")
+        size = self.hashmod_digest_size
+        secret = HKDF(self.secret, salt=salt, info=info, size=size)
+        return encode_token_bytes(secret)
 
     def _get_signature(self, value):
         """Calculate the HMAC signature for the given value."""

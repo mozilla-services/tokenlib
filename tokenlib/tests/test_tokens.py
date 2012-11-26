@@ -2,15 +2,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this file,
 # You can obtain one at http://mozilla.org/MPL/2.0/.
 
-import unittest2
+import sys
 import hashlib
 import time
-from base64 import urlsafe_b64encode as b64encode
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest  # pragma: nocover
+else:
+    import unittest  # pragma: nocover  # NOQA
 
 import tokenlib
+from tokenlib.utils import encode_token_bytes
 
 
-class TestTokens(unittest2.TestCase):
+class TestTokens(unittest.TestCase):
 
     def test_token_validation(self):
         manager = tokenlib.TokenManager(timeout=0.2)
@@ -21,7 +26,7 @@ class TestTokens(unittest2.TestCase):
         # Bad signature == not valid.
         bad_token = token[:-1] + ("X" if token[-1] == "Z" else "Z")
         self.assertRaises(ValueError, manager.parse_token, bad_token)
-        bad_token = ("X" * 50).encode("base64").strip()
+        bad_token = encode_token_bytes(b"X" * 50)
         self.assertRaises(ValueError, manager.parse_token, bad_token)
         # Modified payload == not valid.
         bad_token = "admin" + token[6:]
@@ -56,12 +61,18 @@ class TestTokens(unittest2.TestCase):
 
     def test_get_token_secret_errors_out_for_malformed_tokens(self):
         manager = tokenlib.TokenManager()
-        bad_token = b64encode("{}" + ("X" * manager.hashmod_digest_size))
+        digest_size = manager.hashmod_digest_size
+        bad_token = encode_token_bytes(b"{}" + (b"X" * digest_size))
         self.assertRaises(ValueError, manager.get_token_secret, bad_token)
-        bad_token = b64encode("42" + ("X" * manager.hashmod_digest_size))
+        bad_token = encode_token_bytes(b"42" + (b"X" * digest_size))
         self.assertRaises(ValueError, manager.get_token_secret, bad_token)
-        bad_token = b64encode("NOTJSON" + ("X" * manager.hashmod_digest_size))
+        bad_token = encode_token_bytes(b"NOTJSON" + (b"X" * digest_size))
         self.assertRaises(ValueError, manager.get_token_secret, bad_token)
+
+    def test_master_secret_can_be_unicode_string(self):
+        manager = tokenlib.TokenManager(secret=b"one".decode("ascii"))
+        token = manager.make_token({"test": "data"})
+        self.assertEquals(manager.parse_token(token)["test"], "data")
 
     def test_convenience_functions(self):
         token = tokenlib.make_token({"hello": "world"})
@@ -71,3 +82,7 @@ class TestTokens(unittest2.TestCase):
                           tokenlib.get_token_secret(token))
         self.assertNotEquals(tokenlib.get_token_secret(token),
                              tokenlib.get_token_secret(token, secret="X"))
+
+    def test_tokens_are_native_string_type(self):
+        token = tokenlib.make_token({"hello": "world"})
+        assert isinstance(token, str)
