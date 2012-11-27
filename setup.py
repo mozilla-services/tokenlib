@@ -16,7 +16,7 @@ if sys.version_info < (2, 7):
     requires.append('unittest2')  # pragma: nocover
 
 setup(name='tokenlib',
-      version='0.2.0',
+      version='0.3.0.dev1',
       description='tokenlib',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
