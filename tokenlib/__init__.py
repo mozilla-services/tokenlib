@@ -36,7 +36,12 @@ logger = logging.getLogger('tokenlib')
 #  functions will have a consistent view of e.g. the default secret.
 DEFAULT_SECRET = os.urandom(32)
 DEFAULT_TIMEOUT = 5 * 60
-DEFAULT_HASHMOD = hashlib.sha1
+DEFAULT_HASHMOD = hashlib.sha256
+
+
+#  Unique info strings for mixing into HKDF.
+HKDF_INFO_SIGNING = b"services.mozilla.com/tokenlib/v1/signing"
+HKDF_INFO_DERIVE = b"services.mozilla.com/tokenlib/v1/derive/"
 
 
 class TokenManager(object):
@@ -61,7 +66,7 @@ class TokenManager(object):
        * timeout: the time after which a token will expire, in seconds.
 
        * hashmod:  the hashing module to use for various HMAC operations;
-                   if not specified then hashlib.sha1 will be used.
+                   if not specified then hashlib.sha256 will be used
 
     """
 
@@ -79,9 +84,13 @@ class TokenManager(object):
         self.secret = secret
         self.timeout = timeout
         self.hashmod = hashmod
-        self.hashmod_digest_size = hashmod().digest_size
-        self._sig_secret = HKDF(self.secret, salt=None, info=b"SIGNING",
-                                size=self.hashmod_digest_size)
+        hashobj = hashmod()
+        self.hashmod_name = hashobj.name
+        self.hashmod_digest_size = hashobj.digest_size
+        self._sig_secret = HKDF(self.secret, salt=None,
+                                info=HKDF_INFO_SIGNING,
+                                size=self.hashmod_digest_size,
+                                hashmod=self.hashmod)
 
     def make_token(self, data):
         """Generate a new token embedding the given dict of data.
@@ -156,9 +165,9 @@ class TokenManager(object):
             salt = json.loads(payload.decode("utf8"))["salt"].encode("ascii")
         except (TypeError, KeyError) as e:
             raise ValueError(str(e))
-        info = token.encode("ascii")
-        size = self.hashmod_digest_size
-        secret = HKDF(self.secret, salt=salt, info=info, size=size)
+        info = HKDF_INFO_DERIVE + token.encode("ascii")
+        secret = HKDF(self.secret, salt=salt, info=info,
+                      size=self.hashmod_digest_size, hashmod=self.hashmod)
         return encode_token_bytes(secret)
 
     def _get_signature(self, value):

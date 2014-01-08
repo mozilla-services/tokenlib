@@ -2,6 +2,7 @@ PENDING
 =======
 
 * clarified licensing info
+* switched to sha256 as default hashing algorithm
 * renamed `get_token_secret` to `get_derived_secret` to clarify its
   purpose; the previous name remains but is deprecated.
 
