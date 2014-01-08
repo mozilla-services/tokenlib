@@ -37,7 +37,7 @@ logger = logging.getLogger('tokenlib')
 #  functions will have a consistent view of e.g. the default secret.
 DEFAULT_SECRET = os.urandom(32)
 DEFAULT_TIMEOUT = 5 * 60
-DEFAULT_HASHMOD = hashlib.sha256
+DEFAULT_HASHMOD = "sha256"
 
 
 #  Unique info strings for mixing into HKDF.
@@ -74,7 +74,7 @@ class TokenManager(object):
     def __init__(self, secret=None, timeout=None, hashmod=None):
         if secret is None:
             secret = DEFAULT_SECRET
-        elif not isinstance(secret, bytes):
+        if not isinstance(secret, bytes):
             secret = secret.encode("utf8")
         if timeout is None:
             timeout = DEFAULT_TIMEOUT
