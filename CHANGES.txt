@@ -1,5 +1,5 @@
-PENDING
-=======
+0.3.1 - 2014-01-08
+==================
 
 * Make tokenlib.DEFAULT_HASHMOD a string.
 * Fix sporadically-failing test.
