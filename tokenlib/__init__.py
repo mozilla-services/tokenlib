@@ -161,10 +161,6 @@ class TokenManager(object):
         A per-token secret key is calculated by deriving it from the master
         secret with HKDF.
         """
-        # XXX: Having to parse the salt back out of the token is yuck.
-        # But I like having get_derived_secret() as an independent method.
-        # We should consider modifying token format to make this easier.
-        # e.g. by having token = b64encode(data):salt:signature.
         try:
             payload = decode_token_bytes(token)[:-self.hashmod_digest_size]
             salt = json.loads(payload.decode("utf8"))["salt"].encode("ascii")
