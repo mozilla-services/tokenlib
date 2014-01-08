@@ -5,6 +5,7 @@
 import sys
 import hashlib
 import time
+import warnings
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest  # pragma: nocover
@@ -43,10 +44,10 @@ class TestTokens(unittest.TestCase):
         manager = tokenlib.TokenManager()
         token1 = manager.make_token({"test": "one"})
         token2 = manager.make_token({"test": "two"})
-        self.assertEquals(manager.get_token_secret(token1),
-                          manager.get_token_secret(token1))
-        self.assertNotEquals(manager.get_token_secret(token1),
-                             manager.get_token_secret(token2))
+        self.assertEquals(manager.get_derived_secret(token1),
+                          manager.get_derived_secret(token1))
+        self.assertNotEquals(manager.get_derived_secret(token1),
+                             manager.get_derived_secret(token2))
 
     def test_tokens_differ_for_different_master_secrets(self):
         manager1 = tokenlib.TokenManager(secret="one")
@@ -54,20 +55,20 @@ class TestTokens(unittest.TestCase):
         token1 = manager1.make_token({"test": "data"})
         token2 = manager2.make_token({"test": "data"})
         self.assertNotEquals(token1, token2)
-        self.assertNotEquals(manager1.get_token_secret(token1),
-                             manager2.get_token_secret(token2))
+        self.assertNotEquals(manager1.get_derived_secret(token1),
+                             manager2.get_derived_secret(token2))
         self.assertRaises(ValueError, manager1.parse_token, token2)
         self.assertRaises(ValueError, manager2.parse_token, token1)
 
-    def test_get_token_secret_errors_out_for_malformed_tokens(self):
+    def test_get_derived_secret_errors_out_for_malformed_tokens(self):
         manager = tokenlib.TokenManager()
         digest_size = manager.hashmod_digest_size
         bad_token = encode_token_bytes(b"{}" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_token_secret, bad_token)
+        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
         bad_token = encode_token_bytes(b"42" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_token_secret, bad_token)
+        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
         bad_token = encode_token_bytes(b"NOTJSON" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_token_secret, bad_token)
+        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
 
     def test_master_secret_can_be_unicode_string(self):
         manager = tokenlib.TokenManager(secret=b"one".decode("ascii"))
@@ -78,11 +79,19 @@ class TestTokens(unittest.TestCase):
         token = tokenlib.make_token({"hello": "world"})
         self.assertEquals(tokenlib.parse_token(token)["hello"], "world")
         self.assertRaises(ValueError, tokenlib.parse_token, token, secret="X")
-        self.assertEquals(tokenlib.get_token_secret(token),
-                          tokenlib.get_token_secret(token))
-        self.assertNotEquals(tokenlib.get_token_secret(token),
-                             tokenlib.get_token_secret(token, secret="X"))
+        self.assertEquals(tokenlib.get_derived_secret(token),
+                          tokenlib.get_derived_secret(token))
+        self.assertNotEquals(tokenlib.get_derived_secret(token),
+                             tokenlib.get_derived_secret(token, secret="X"))
 
     def test_tokens_are_native_string_type(self):
         token = tokenlib.make_token({"hello": "world"})
         assert isinstance(token, str)
+
+    def test_get_token_secret_is_deprecated(self):
+        token = tokenlib.make_token({"hello": "world"})
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("default")
+            tokenlib.get_token_secret(token)
+            self.assertEquals(len(w), 1)
+            self.assertEquals(w[0].category, DeprecationWarning)

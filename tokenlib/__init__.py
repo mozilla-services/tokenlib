@@ -21,6 +21,7 @@ import time
 import json
 import hmac
 import hashlib
+import warnings
 from binascii import hexlify
 
 from tokenlib.utils import (strings_differ, HKDF,
@@ -49,7 +50,7 @@ class TokenManager(object):
     The TokenManager must be initialized with a "master secret" which is used
     to crytographically secure the tokens.  Each token consists of a JSON
     object with an appended HMAC signature.  Tokens also have a corresponding
-    "token secret" generated using HKDF, which can be given to clients for
+    "derived secret" generated using HKDF, which can be given to clients for
     use in signature-based authentication schemes.
 
     The constructor takes the following arguments:
@@ -57,7 +58,7 @@ class TokenManager(object):
        * secret:  string key used for signing the token;
                   if not specified then a random bytestring is used.
 
-       * timeout: the time after which a token will expire.
+       * timeout: the time after which a token will expire, in seconds.
 
        * hashmod:  the hashing module to use for various HMAC operations;
                    if not specified then hashlib.sha1 will be used.
@@ -129,13 +130,25 @@ class TokenManager(object):
         return data
 
     def get_token_secret(self, token):
-        """Get the secret key associated with the given token.
+        """Get the derived secret key associated with the given token.
+
+        A per-token secret key is calculated by deriving it from the master
+        secret with HKDF.
+
+        DEPRECATED: use the get_derived_secret() method instead.
+        """
+        warnings.warn("get_token_secret is deprecated; use get_derived_secret",
+                      category=DeprecationWarning)
+        return self.get_derived_secret(token)
+
+    def get_derived_secret(self, token):
+        """Get the derived secret key associated with the given token.
 
         A per-token secret key is calculated by deriving it from the master
         secret with HKDF.
         """
         # XXX: Having to parse the salt back out of the token is yuck.
-        # But I like having get_token_secret() as an independent method.
+        # But I like having get_derived_secret() as an independent method.
         # We should consider modifying token format to make this easier.
         # e.g. by having token = b64encode(data):salt:signature.
         try:
@@ -164,5 +177,13 @@ def parse_token(token, now=None, **kwds):
 
 
 def get_token_secret(token, **kwds):
-    """Convenience function to get the secret key for a given token."""
+    """Convenience function to get the derived secret key for a given token.
+
+    DEPRECATED: use get_derived_secret() instead.
+    """
     return TokenManager(**kwds).get_token_secret(token)
+
+
+def get_derived_secret(token, **kwds):
+    """Convenience function to get the derived secret key for a given token."""
+    return TokenManager(**kwds).get_derived_secret(token)

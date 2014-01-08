@@ -2,6 +2,8 @@ PENDING
 =======
 
 * clarified licensing info
+* renamed `get_token_secret` to `get_derived_secret` to clarify its
+  purpose; the previous name remains but is deprecated.
 
 
 0.2.0 - 2012-11-27
