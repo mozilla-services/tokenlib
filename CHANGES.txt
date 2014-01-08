@@ -5,6 +5,7 @@ PENDING
 * switched to sha256 as default hashing algorithm
 * renamed `get_token_secret` to `get_derived_secret` to clarify its
   purpose; the previous name remains but is deprecated.
+* added custom ValueError subclasses for more fine-grained error reporting.
 
 
 0.2.0 - 2012-11-27

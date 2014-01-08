@@ -24,6 +24,7 @@ import hashlib
 import warnings
 from binascii import hexlify
 
+from tokenlib import errors
 from tokenlib.utils import (strings_differ, HKDF,
                             encode_token_bytes, decode_token_bytes)
 
@@ -119,8 +120,8 @@ class TokenManager(object):
         # Parse the payload and signature from the token.
         try:
             decoded_token = decode_token_bytes(token)
-        except TypeError as e:
-            raise ValueError(str(e))  # pragma: nocover
+        except (TypeError, ValueError) as e:
+            raise errors.MalformedTokenError(str(e))
         payload = decoded_token[:-self.hashmod_digest_size]
         sig = decoded_token[-self.hashmod_digest_size:]
         # Carefully check the signature.
@@ -128,14 +129,18 @@ class TokenManager(object):
         # Read the docstring of strings_differ for more details.
         expected_sig = self._get_signature(payload)
         if strings_differ(sig, expected_sig):
-            raise ValueError("token has invalid signature")
+            raise errors.InvalidSignatureError()
         # Only decode *after* we've confirmed the signature.
-        data = json.loads(payload.decode("utf8"))
+        # This should never fail, but well, you can't be too careful.
+        try:
+            data = json.loads(payload.decode("utf8"))
+        except ValueError as e:  # pragma: nocover
+            raise errors.MalformedTokenError(str(e))
         # Check whether it has expired.
         if now is None:
             now = time.time()
         if data["expires"] <= now:
-            raise ValueError("token has expired")
+            raise errors.ExpiredTokenError()
         return data
 
     def get_token_secret(self, token):
@@ -163,8 +168,8 @@ class TokenManager(object):
         try:
             payload = decode_token_bytes(token)[:-self.hashmod_digest_size]
             salt = json.loads(payload.decode("utf8"))["salt"].encode("ascii")
-        except (TypeError, KeyError) as e:
-            raise ValueError(str(e))
+        except (TypeError, KeyError, ValueError) as e:
+            raise errors.MalformedTokenError(str(e))
         info = HKDF_INFO_DERIVE + token.encode("ascii")
         secret = HKDF(self.secret, salt=salt, info=info,
                       size=self.hashmod_digest_size, hashmod=self.hashmod)

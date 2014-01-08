@@ -13,6 +13,7 @@ else:
     import unittest  # pragma: nocover  # NOQA
 
 import tokenlib
+from tokenlib import errors
 from tokenlib.utils import encode_token_bytes
 
 
@@ -24,17 +25,25 @@ class TestTokens(unittest.TestCase):
         # Proper token == valid.
         data = manager.parse_token(token)
         self.assertEquals(data["hello"], "world")
+        # Badly-encoded bytes == not valid.
+        bad_token = "@" + token[1:]
+        with self.assertRaises(errors.MalformedTokenError):
+            manager.parse_token(bad_token)
         # Bad signature == not valid.
         bad_token = token[:-1] + ("X" if token[-1] == "Z" else "Z")
-        self.assertRaises(ValueError, manager.parse_token, bad_token)
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager.parse_token(bad_token)
         bad_token = encode_token_bytes(b"X" * 50)
-        self.assertRaises(ValueError, manager.parse_token, bad_token)
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager.parse_token(bad_token)
         # Modified payload == not valid.
-        bad_token = "admin" + token[6:]
-        self.assertRaises(ValueError, manager.parse_token, bad_token)
+        bad_token = encode_token_bytes(b"admin") + token[6:]
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager.parse_token(bad_token)
         # Expired token == not valid.
         time.sleep(0.2)
-        self.assertRaises(ValueError, manager.parse_token, token)
+        with self.assertRaises(errors.ExpiredTokenError):
+            manager.parse_token(token)
 
     def test_loading_hashmod_by_string_name(self):
         manager = tokenlib.TokenManager(hashmod="md5")
@@ -57,18 +66,23 @@ class TestTokens(unittest.TestCase):
         self.assertNotEquals(token1, token2)
         self.assertNotEquals(manager1.get_derived_secret(token1),
                              manager2.get_derived_secret(token2))
-        self.assertRaises(ValueError, manager1.parse_token, token2)
-        self.assertRaises(ValueError, manager2.parse_token, token1)
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager1.parse_token(token2)
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager2.parse_token(token1)
 
     def test_get_derived_secret_errors_out_for_malformed_tokens(self):
         manager = tokenlib.TokenManager()
         digest_size = manager.hashmod_digest_size
         bad_token = encode_token_bytes(b"{}" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
+        with self.assertRaises(errors.MalformedTokenError):
+            manager.get_derived_secret(bad_token)
         bad_token = encode_token_bytes(b"42" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
+        with self.assertRaises(errors.MalformedTokenError):
+            manager.get_derived_secret(bad_token)
         bad_token = encode_token_bytes(b"NOTJSON" + (b"X" * digest_size))
-        self.assertRaises(ValueError, manager.get_derived_secret, bad_token)
+        with self.assertRaises(errors.MalformedTokenError):
+            manager.get_derived_secret(bad_token)
 
     def test_master_secret_can_be_unicode_string(self):
         manager = tokenlib.TokenManager(secret=b"one".decode("ascii"))
