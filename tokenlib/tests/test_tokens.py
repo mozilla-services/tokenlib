@@ -35,7 +35,7 @@ class TestTokens(unittest.TestCase):
         with self.assertRaises(errors.InvalidSignatureError):
             manager.parse_token(bad_token)
         bad_token_bytes = token_bytes[:-1]
-        bad_token_bytes += "X" if token_bytes[-1] == "Z" else "Z"
+        bad_token_bytes += b"X" if token_bytes[-1] == b"Z" else b"Z"
         bad_token = encode_token_bytes(bad_token_bytes)
         with self.assertRaises(errors.InvalidSignatureError):
             manager.parse_token(bad_token)
