@@ -14,7 +14,7 @@ else:
 
 import tokenlib
 from tokenlib import errors
-from tokenlib.utils import encode_token_bytes
+from tokenlib.utils import encode_token_bytes, decode_token_bytes
 
 
 class TestTokens(unittest.TestCase):
@@ -22,6 +22,7 @@ class TestTokens(unittest.TestCase):
     def test_token_validation(self):
         manager = tokenlib.TokenManager(timeout=0.2)
         token = manager.make_token({"hello": "world"})
+        token_bytes = decode_token_bytes(token)
         # Proper token == valid.
         data = manager.parse_token(token)
         self.assertEquals(data["hello"], "world")
@@ -30,14 +31,16 @@ class TestTokens(unittest.TestCase):
         with self.assertRaises(errors.MalformedTokenError):
             manager.parse_token(bad_token)
         # Bad signature == not valid.
-        bad_token = token[:-1] + ("X" if token[-1] == "Z" else "Z")
-        with self.assertRaises(errors.InvalidSignatureError):
-            manager.parse_token(bad_token)
         bad_token = encode_token_bytes(b"X" * 50)
         with self.assertRaises(errors.InvalidSignatureError):
             manager.parse_token(bad_token)
+        bad_token_bytes = token_bytes[:-1]
+        bad_token_bytes += "X" if token_bytes[-1] == "Z" else "Z"
+        bad_token = encode_token_bytes(bad_token_bytes)
+        with self.assertRaises(errors.InvalidSignatureError):
+            manager.parse_token(bad_token)
         # Modified payload == not valid.
-        bad_token = encode_token_bytes(b"admin") + token[6:]
+        bad_token = encode_token_bytes(b"admin" + token_bytes[6:])
         with self.assertRaises(errors.InvalidSignatureError):
             manager.parse_token(bad_token)
         # Expired token == not valid.
