@@ -1,0 +1,12 @@
+# requires
+
+# tests_requires
+
+# develop
+coverage
+nose
+pip
+pylint
+tox
+twine
+wheel

@@ -1,9 +1,13 @@
+*~
 *.pyc
+*.pyo
 *.egg-info
 *.swp
-.coverage
-*~
 build
 dist
-htmlcov
 .tox
+.eggs
+man/
+local/
+html/
+.coverage
