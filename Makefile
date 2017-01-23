@@ -45,6 +45,15 @@ $(ENV):
 	$(VIRTUALENV) $(VTENV_OPTS) $(ENV)
 	$(ENV_BIN)/pip install -r requirements.txt
 
+# set breakpoint with:
+#    DEBUG()
+# e.g. to run tests in debug mode in emacs use:
+#   'M-x pdb' ... 'make debug'
+
+PHONY += debug
+debug: build
+	DEBUG=1 $(ENV_BIN)/nosetests -vx tokenlib/tests
+
 # for distribution, use python from virtualenv
 PHONY += dist
 dist:  clean-dist $(ENV)
