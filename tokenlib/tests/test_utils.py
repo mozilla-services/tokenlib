@@ -5,11 +5,7 @@
 import sys
 import hashlib
 from binascii import unhexlify
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest  # pragma: nocover
-else:
-    import unittest  # pragma: nocover  # NOQA
+import unittest
 
 from tokenlib.utils import strings_differ, HKDF, HKDF_extract
 

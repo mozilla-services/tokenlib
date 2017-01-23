@@ -6,11 +6,7 @@ import sys
 import hashlib
 import time
 import warnings
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest  # pragma: nocover
-else:
-    import unittest  # pragma: nocover  # NOQA
+import unittest
 
 import tokenlib
 from tokenlib import errors
