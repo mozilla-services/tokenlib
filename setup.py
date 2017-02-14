@@ -23,10 +23,9 @@ def find_meta(meta):
 
 NAME             = 'tokenlib'
 REQUIRES         = []
-TESTS_REQUIRES   = REQUIRES + []
+EXTRAS_REQUIRE   = {}
 META_FILE        = read_file('tokenlib/__init__.py')
 LONG_DESCRIPTION = [ read_file(n) for n in ['README.rst', 'CHANGES.txt']]
-
 
 setup(name                   = NAME
       , version              = find_meta('version')
@@ -40,8 +39,7 @@ setup(name                   = NAME
       , packages             = find_packages()
       , include_package_data = True
       , install_requires     = REQUIRES
-      # unfortunately test is not supported by pip (only 'setup.py test')
-      , tests_require        = TESTS_REQUIRES
+      , extras_require       = EXTRAS_REQUIRE
       , test_suite           = NAME
       , zip_safe             = False
       , classifiers          = [
