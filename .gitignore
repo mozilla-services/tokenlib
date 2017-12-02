@@ -7,7 +7,6 @@ build
 dist
 .tox
 .eggs
-man/
 local/
 html/
 .coverage

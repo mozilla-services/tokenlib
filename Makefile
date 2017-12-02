@@ -1,6 +1,7 @@
 # -*- coding: utf-8; mode: makefile-gmake -*-
 
 .DEFAULT = help
+TEST ?= .
 
 # python version to use
 PY       ?=3
@@ -13,7 +14,8 @@ PYBUILD  ?= build
 
 SYSTEMPYTHON = `which python$(PY) python | head -n 1`
 VIRTUALENV   = virtualenv --python=$(SYSTEMPYTHON)
-VTENV_OPTS   = "--no-site-packages"
+VENV_OPTS    = "--no-site-packages"
+TEST_FOLDER  = ./tokenlib/tests
 
 ENV     = ./local/py$(PY)
 ENV_BIN = $(ENV)/bin
@@ -23,37 +25,39 @@ PHONY += help
 help::
 	@echo  'usage:'
 	@echo
-	@echo  '  build  - build virtualenv and install (developer mode)'
-	@echo  '  lint   - run pylint within "build" (developer mode)'
-	@echo  '  test   - run tests for all supported environments (tox)'
-	@echo  '  dist   - build packages in "$(PYDIST)/"'
-	@echo  '  pypi   - upload "$(PYDIST)/*" files to PyPi'
-	@echo  '  clean	 - remove most generated files'
+	@echo  '  build     - build virtualenv ($(ENV)) and install *developer mode*'
+	@echo  '  lint      - run pylint within "build" (developer mode)'
+	@echo  '  test      - run tests for all supported environments (tox)'
+	@echo  '  dist      - build packages in "$(PYDIST)/"'
+	@echo  '  pypi      - upload "$(PYDIST)/*" files to PyPi'
+	@echo  '  clean	    - remove most generated files'
+	@echo
+	@echo  'options:'
+	@echo
+	@echo  '  PY=3      - python version to use (default 3)'
+	@echo  '  TEST=.    - choose test from $(TEST_FOLDER) (default "." runs all)'
+	@echo
+	@echo  'Example; a clean and fresh build (in local/py3), run all tests (py27, py35, lint)::'
+	@echo
+	@echo  '  make clean build test'
+	@echo
 
 
 PHONY += build
 build: $(ENV)
-	$(ENV_BIN)/pip install -e .
+	$(ENV_BIN)/pip -v install -e .
+
 
 PHONY += lint
 lint: $(ENV)
-	$(ENV_BIN)/pylint $(PYOBJECTS) --rcfile pylintrc
+	$(ENV_BIN)/pylint $(PYOBJECTS) --rcfile ./.pylintrc
 
 PHONY += test
 test:  $(ENV)
-	$(ENV_BIN)/tox
-
-# set breakpoint with:
-#    DEBUG()
-# e.g. to run tests in debug mode in emacs use:
-#   'M-x pdb' ... 'make debug'
-
-PHONY += debug
-debug: build
-	DEBUG=1 $(ENV_BIN)/nosetests -vx mozsvc/tests
+	$(ENV_BIN)/tox -vv
 
 $(ENV):
-	$(VIRTUALENV) $(VTENV_OPTS) $(ENV)
+	$(VIRTUALENV) $(VENV_OPTS) $(ENV)
 	$(ENV_BIN)/pip install -r requirements.txt
 
 # for distribution, use python from virtualenv
@@ -63,8 +67,8 @@ dist:  clean-dist $(ENV)
 		sdist -d $(PYDIST)  \
 		bdist_wheel --bdist-dir $(PYBUILD) -d $(PYDIST)
 
-PHONY += pypi
-pypi: dist
+PHONY += publish
+publish: dist
 	$(ENV_BIN)/twine upload $(PYDIST)/*
 
 PHONY += clean-dist
@@ -74,14 +78,13 @@ clean-dist:
 
 PHONY += clean
 clean: clean-dist
-	rm -rf $(ENV)
+	rm -rf ./local ./.cache
 	rm -rf *.egg-info .coverage
 	rm -rf .eggs .tox html
 	find . -name '*~' -exec echo rm -f {} +
 	find . -name '*.pyc' -exec rm -f {} +
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name __pycache__ -exec rm -rf {} +
-
 
 # END of Makefile
 .PHONY: $(PHONY)
