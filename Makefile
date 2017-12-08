@@ -29,7 +29,7 @@ help::
 	@echo  '  lint      - run pylint within "build" (developer mode)'
 	@echo  '  test      - run tests for all supported environments (tox)'
 	@echo  '  dist      - build packages in "$(PYDIST)/"'
-	@echo  '  pypi      - upload "$(PYDIST)/*" files to PyPi'
+	@echo  '  publish   - upload "$(PYDIST)/*" files to PyPi'
 	@echo  '  clean	    - remove most generated files'
 	@echo
 	@echo  'options:'
