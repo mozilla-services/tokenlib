@@ -3,5 +3,6 @@ Contributors
 
 Contributors in order of appearance:
 
-* ???
-* Markus Heiser <markus.heiser@darmarIT.de>
+- Ryan Kelly <rkelly@mozilla.com>
+- Tarek Ziade <tarek@ziade.org>
+- Markus Heiser <markus.heiser@darmarIT.de>
