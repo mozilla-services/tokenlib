@@ -6,7 +6,7 @@
 Error classes for tokenlib.
 
 """
-
+# pylint: disable=useless-super-delegation
 
 class Error(ValueError):
     """Base error class for all tokenlib exceptions."""

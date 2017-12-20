@@ -1,0 +1,20 @@
+# --------
+# requires
+# --------
+
+# --------------
+# tests_requires
+# --------------
+
+# -------
+# develop
+# -------
+
+pytest
+pytest-cov
+pip
+pylint
+tox
+twine
+wheel
+mock
