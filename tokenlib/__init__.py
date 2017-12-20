@@ -6,7 +6,7 @@
 Generic library for managing signed authentication tokens.
 """
 
-__version__      = "2.0.0rc1"
+__version__      = "2.0.0"
 __description__  = "Generic library for managing signed authentication tokens."
 __url__          = "https://github.com/mozilla-services/tokenlib"
 __license__      = "MPLv2.0"
